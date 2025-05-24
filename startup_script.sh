@@ -19,6 +19,9 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
 
+# Track PIDs
+PIDS=()
+
 
 # Function to watch for /dev/ttyACM* devices and start micro_ros_agent
 watch_and_start_agents() {
@@ -40,13 +43,36 @@ watch_and_start_agents() {
   done
 }
 
-# Run the agent watcher in the background
+# Cleanup function on Ctrl+C
+cleanup() {
+  echo "Caught Ctrl+C, killing child processes..."
+  for pid in "${PIDS[@]}"; do
+    kill "$pid" 2>/dev/null
+  done
+  kill 0  # kill all child processes in this process group
+  exit 0
+}
+
+trap cleanup SIGINT
+
+# Start processes and track their PIDs
 watch_and_start_agents &
+PIDS+=($!)
 
 ros2 run wheelchair_code_module wheelchair &
-ros2 run wheelchair_code_module obstacle_publisher_node &
-ros2 launch livox_ros_driver2 rviz_MID360_launch.py &
-(cd ~/Frontend/test-app && npm start) &
-(cd ~/Frontend/electron-communication && node middle_man.js) &
+PIDS+=($!)
 
+ros2 run wheelchair_code_module obstacle_publisher_node &
+PIDS+=($!)
+
+ros2 launch livox_ros_driver2 rviz_MID360_launch.py &
+PIDS+=($!)
+
+(cd ~/Frontend/test-app && npm start) &
+PIDS+=($!)
+
+(cd ~/Frontend/electron-communication && node middle_man.js) &
+PIDS+=($!)
+
+# Wait for all background jobs
 wait
