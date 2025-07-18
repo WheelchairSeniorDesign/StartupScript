@@ -65,6 +65,9 @@ PIDS+=($!)
 ros2 run wheelchair_code_module obstacle_publisher_node &
 PIDS+=($!)
 
+ros2 run wheelchair_code_module temp_monitor &
+PIDS+=($!)
+
 ros2 launch livox_ros_driver2 rviz_MID360_launch.py &
 PIDS+=($!)
 
